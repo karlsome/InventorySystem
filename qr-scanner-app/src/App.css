@@ -1,0 +1,159 @@
+/* General Styles */
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f4f4f4;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+/* Center Content */
+#root {
+  max-width: 900px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+  background: white;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* Logo Styling */
+.logo {
+  height: 5rem;
+  padding: 1rem;
+  transition: transform 0.3s ease;
+}
+.logo:hover {
+  transform: scale(1.05);
+}
+
+/* Scanner Container */
+#qr-reader {
+  width: 100%;
+  max-width: 500px;
+  height: 320px;
+  margin: 1.5rem auto;
+  border: 2px solid #ddd;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Scan Again Button */
+button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  font-size: 1.2rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  display: block;
+  margin: 10px auto;
+}
+button:hover {
+  background-color: #45a049;
+}
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+/* Form Input Fields */
+input[type="text"],
+input[type="number"] {
+  width: 80%;
+  max-width: 400px;
+  padding: 10px;
+  font-size: 1rem;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  outline: none;
+  transition: border 0.3s ease;
+}
+input:focus {
+  border: 2px solid #4caf50;
+}
+
+/* Name Input Section */
+.name-input-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* Name Input Row (for manual input & QR scan button) */
+.name-input-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.name-input-row input {
+  flex-grow: 1;
+}
+.name-input-row button {
+  background-color: #2196f3;
+}
+.name-input-row button:hover {
+  background-color: #1e88e5;
+}
+
+/* Scanned Results List */
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin-top: 15px;
+  max-height: 250px;
+  overflow-y: auto;
+}
+li {
+  background: #ffffff;
+  margin: 8px 0;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+li strong {
+  color: #333;
+}
+li button {
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  margin-left: 10px;
+}
+
+/* Save Button */
+.save-button {
+  background-color: #ff9800;
+}
+.save-button:hover {
+  background-color: #f57c00;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+  #root {
+    max-width: 95%;
+    padding: 1rem;
+  }
+  button {
+    font-size: 1rem;
+    padding: 10px 16px;
+  }
+  input[type="text"],
+  input[type="number"] {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+}
