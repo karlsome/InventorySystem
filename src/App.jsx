@@ -1,14 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import QRScanner from "./QRScanner";
 
 function App() {
     const [scannedResults, setScannedResults] = useState([]);
     const [scannedBy, setScannedBy] = useState(""); // Store scanner's name
     const [isNameConfirmed, setIsNameConfirmed] = useState(false);
+    const [isBluetoothReady, setIsBluetoothReady] = useState(false); // ✅ Indicator state
     const [editingIndex, setEditingIndex] = useState(null);
     const [editedQuantity, setEditedQuantity] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [isScanningName, setIsScanningName] = useState(false);
+    const [barcodeBuffer, setBarcodeBuffer] = useState(""); // Stores scanned barcode data
+    const [scannerType, setScannerType] = useState(null); // "camera" or "bluetooth"
 
     // ✅ Confirms the name and allows access to the scanner
     const confirmName = () => {
@@ -17,6 +20,11 @@ function App() {
             return;
         }
         setIsNameConfirmed(true);
+
+        // ✅ If Bluetooth scanner is selected, show the ready indicator
+        if (scannerType === "bluetooth") {
+            setIsBluetoothReady(true);
+        }
     };
 
     // ✅ Handles QR scanning of product codes
@@ -36,26 +44,37 @@ function App() {
         setIsScanningName(false); // Close name scanner after scanning
     };
 
-    // ✅ Edit Functionality
-    const handleEdit = (index) => {
-        setEditingIndex(index);
-        setEditedQuantity(scannedResults[index].quantity);
-    };
+    // ✅ Bluetooth Barcode Scanner Support (Only if Bluetooth mode is selected)
+    useEffect(() => {
+        if (scannerType !== "bluetooth") return; // Only enable keyboard input when Bluetooth is selected
 
-    // ✅ Save Edited Quantity
-    const handleSave = (index) => {
-        setScannedResults((prev) =>
-            prev.map((item, i) =>
-                i === index ? { ...item, quantity: parseInt(editedQuantity) } : item
-            )
-        );
-        setEditingIndex(null);
-    };
+        let bufferTimeout; // Timeout to clear buffer if incomplete scan
 
-    // ✅ Delete Item
-    const handleDelete = (index) => {
-        setScannedResults((prev) => prev.filter((_, i) => i !== index));
-    };
+        const handleKeyDown = (event) => {
+            if (!isNameConfirmed) return; // Ignore input if name is not confirmed
+
+            if (event.key === "Enter") {
+                if (barcodeBuffer.trim() !== "") {
+                    handleScan(barcodeBuffer.trim());
+                    setBarcodeBuffer(""); // Reset after processing
+                }
+            } else if (event.key.length === 1) {
+                // Append only valid characters (ignore Shift, Ctrl, etc.)
+                setBarcodeBuffer((prev) => prev + event.key);
+
+                // Reset buffer if no more input within 500ms (prevents partial scans)
+                clearTimeout(bufferTimeout);
+                bufferTimeout = setTimeout(() => setBarcodeBuffer(""), 500);
+            }
+        };
+
+        // Listen for keyboard input (Bluetooth scanner simulation)
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            clearTimeout(bufferTimeout);
+        };
+    }, [barcodeBuffer, isNameConfirmed, scannerType]);
 
     // ✅ Reset the entire app to start from the beginning
     const handleReset = () => {
@@ -64,8 +83,9 @@ function App() {
         setIsNameConfirmed(false); // Require name input again
         setEditingIndex(null);
         setEditedQuantity("");
-        // ✅ Refresh the browser
-        window.location.reload();
+        setScannerType(null); // Reset scanner selection
+        setBarcodeBuffer("");
+        setIsBluetoothReady(false);
     };
 
     // ✅ Save data to MongoDB
@@ -109,74 +129,64 @@ function App() {
         <div>
             <h1>Testing 在庫 QR Scanner QR / スキャナー</h1>
 
-            {/* ✅ Name Input Section */}
-            <div className="name-input-container">
-                <div className="name-input-row">
-                    <input
-                        type="text"
-                        value={scannedBy}
-                        onChange={(e) => setScannedBy(e.target.value)}
-                        placeholder="名前入れてください..."
-                        disabled={isNameConfirmed}
-                    />
-                    <button onClick={() => setIsScanningName(true)} disabled={isNameConfirmed} className="scan-name-btn">
-                        名前スキャン
-                    </button>
-                    <button onClick={confirmName} disabled={isNameConfirmed} className="ok-btn">
-                        OK
-                    </button>
+            {/* ✅ Scanner Selection */}
+            {!scannerType && (
+                <div className="scanner-selection">
+                    <h3>Select Scanner Type:</h3>
+                    <button onClick={() => setScannerType("camera")}>📷 Use Camera Scanner</button>
+                    <button onClick={() => setScannerType("bluetooth")}>🔵 Use Bluetooth Scanner</button>
                 </div>
-            </div>
+            )}
 
-            {/* ✅ Show scanner only if the name is confirmed */}
-            {isNameConfirmed && <QRScanner onScan={handleScan} />}
+            {/* ✅ Name Input Section */}
+            {scannerType && (
+                <div className="name-input-container">
+                    <div className="name-input-row">
+                        <input
+                            type="text"
+                            value={scannedBy}
+                            onChange={(e) => setScannedBy(e.target.value)}
+                            placeholder="名前入れてください..."
+                            disabled={isNameConfirmed}
+                        />
+                        <button onClick={() => setIsScanningName(true)} disabled={isNameConfirmed} className="scan-name-btn">
+                            名前スキャン
+                        </button>
+                        <button onClick={confirmName} disabled={isNameConfirmed} className="ok-btn">
+                            OK
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ✅ Bluetooth Scanner Ready Indicator */}
+            {scannerType === "bluetooth" && isNameConfirmed && isBluetoothReady && (
+                <div className="bluetooth-ready-indicator">
+                    ✅ <strong>Bluetooth scanner is ready!</strong> You can now scan barcodes.
+                </div>
+            )}
+
+            {/* ✅ Show Camera Scanner Only If Camera Mode is Selected */}
+            {scannerType === "camera" && isNameConfirmed && <QRScanner onScan={handleScan} />}
 
             <h3>Scanned Results:</h3>
             <ul>
                 {scannedResults.map((item, index) => (
                     <li key={index}>
                         <strong>{index + 1}. 品番:</strong> {item.productName} | 
-                        <strong> 収容数:</strong> 
-                        {editingIndex === index ? (
-                            <input
-                                type="number"
-                                value={editedQuantity}
-                                onChange={(e) => setEditedQuantity(e.target.value)}
-                                className="edit-input"
-                            />
-                        ) : (
-                            <span> {item.quantity} </span>
-                        )}
-
-                        {editingIndex === index ? (
-                            <button onClick={() => handleSave(index)} className="save-edit-button">Save</button>
-                        ) : (
-                            <button onClick={() => handleEdit(index)} className="edit-button">Edit</button>
-                        )}
-
-                        <button onClick={() => handleDelete(index)} className="delete-button">Delete</button>
+                        <strong> 収容数:</strong> {item.quantity}
+                        <button onClick={() => handleDelete(index)}>Delete</button>
                     </li>
                 ))}
             </ul>
 
             {/* ✅ Save & Reset Buttons */}
             <div className="button-group">
-                <button onClick={saveToDatabase} disabled={isSaving} className="save-button">
+                <button onClick={saveToDatabase} disabled={isSaving}>
                     {isSaving ? "Saving..." : "Save to Database"}
                 </button>
-                <button onClick={handleReset} className="reset-button">
-                    Reset
-                </button>
+                <button onClick={handleReset}>Reset</button>
             </div>
-
-            {/* ✅ Name QR Scanner */}
-            {isScanningName && (
-                <div>
-                    <h3>Scan Your Name</h3>
-                    <QRScanner onScan={handleScanName} />
-                    <button onClick={() => setIsScanningName(false)}>Cancel</button>
-                </div>
-            )}
         </div>
     );
 }
