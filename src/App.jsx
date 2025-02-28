@@ -107,7 +107,7 @@ function App() {
 
     return (
         <div>
-            <h1>在庫 QR Scanner QR / スキャナー</h1>
+            <h1>Testing 在庫 QR Scanner QR / スキャナー</h1>
 
             {/* ✅ Name Input Section */}
             <div className="name-input-container">
