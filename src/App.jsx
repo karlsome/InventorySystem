@@ -44,6 +44,64 @@ function App() {
         setIsScanningName(false); // Close name scanner after scanning
     };
 
+    // ✅ Edit Functionality
+    const handleEdit = (index) => {
+        setEditingIndex(index);
+        setEditedQuantity(scannedResults[index].quantity);
+    };
+
+    // ✅ Save Edited Quantity
+    const handleSave = (index) => {
+        setScannedResults((prev) =>
+            prev.map((item, i) =>
+                i === index ? { ...item, quantity: parseInt(editedQuantity) } : item
+            )
+        );
+        setEditingIndex(null);
+    };
+
+    // ✅ Delete Item
+    const handleDelete = (index) => {
+        setScannedResults((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    // ✅ Save data to MongoDB
+    const saveToDatabase = async () => {
+        if (scannedResults.length === 0) {
+            alert("No scanned data to save.");
+            return;
+        }
+
+        if (!scannedBy.trim()) {
+            alert("Error: Name is missing! Please re-enter your name.");
+            return;
+        }
+
+        setIsSaving(true);
+
+        try {
+            const response = await fetch("https://kurachi.onrender.com/saveScannedQRData", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ scannedBy, scannedResults }), // ✅ Include scannedBy
+            });
+
+            if (response.ok) {
+                alert("Data saved successfully!");
+                handleReset(); // ✅ Reset app after saving
+            } else {
+                alert("Failed to save data.");
+            }
+        } catch (error) {
+            console.error("Error saving data:", error);
+            alert("An error occurred while saving.");
+        }
+
+        setIsSaving(false);
+    };
+
     // ✅ Bluetooth Barcode Scanner Support (Only if Bluetooth mode is selected)
     useEffect(() => {
         if (scannerType !== "bluetooth") return; // Only enable keyboard input when Bluetooth is selected
@@ -88,46 +146,9 @@ function App() {
         setIsBluetoothReady(false);
     };
 
-    // ✅ Save data to MongoDB
-    const saveToDatabase = async () => {
-        if (scannedResults.length === 0) {
-            alert("No scanned data to save.");
-            return;
-        }
-
-        if (!scannedBy.trim()) {
-            alert("Error: Name is missing! Please re-enter your name.");
-            return;
-        }
-
-        setIsSaving(true);
-
-        try {
-            const response = await fetch("https://kurachi.onrender.com/saveScannedQRData", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ scannedBy, scannedResults }), // ✅ Include scannedBy
-            });
-
-            if (response.ok) {
-                alert("Data saved successfully!");
-                handleReset(); // ✅ Reset app after saving
-            } else {
-                alert("Failed to save data.");
-            }
-        } catch (error) {
-            console.error("Error saving data:", error);
-            alert("An error occurred while saving.");
-        }
-
-        setIsSaving(false);
-    };
-
     return (
         <div>
-            <h1>Testing 在庫 QR Scanner QR / スキャナー</h1>
+            <h1>在庫 QR Scanner QR / スキャナー</h1>
 
             {/* ✅ Scanner Selection */}
             {!scannerType && (
@@ -149,10 +170,10 @@ function App() {
                             placeholder="名前入れてください..."
                             disabled={isNameConfirmed}
                         />
-                        <button onClick={() => setIsScanningName(true)} disabled={isNameConfirmed} className="scan-name-btn">
+                        <button onClick={() => setIsScanningName(true)} disabled={isNameConfirmed}>
                             名前スキャン
                         </button>
-                        <button onClick={confirmName} disabled={isNameConfirmed} className="ok-btn">
+                        <button onClick={confirmName} disabled={isNameConfirmed}>
                             OK
                         </button>
                     </div>
@@ -174,7 +195,23 @@ function App() {
                 {scannedResults.map((item, index) => (
                     <li key={index}>
                         <strong>{index + 1}. 品番:</strong> {item.productName} | 
-                        <strong> 収容数:</strong> {item.quantity}
+                        <strong> 収容数:</strong> 
+                        {editingIndex === index ? (
+                            <input
+                                type="number"
+                                value={editedQuantity}
+                                onChange={(e) => setEditedQuantity(e.target.value)}
+                            />
+                        ) : (
+                            <span> {item.quantity} </span>
+                        )}
+
+                        {editingIndex === index ? (
+                            <button onClick={() => handleSave(index)}>Save</button>
+                        ) : (
+                            <button onClick={() => handleEdit(index)}>Edit</button>
+                        )}
+
                         <button onClick={() => handleDelete(index)}>Delete</button>
                     </li>
                 ))}
